@@ -1664,6 +1664,7 @@ static void do_copy2(const char *path, const char *dest)
 		GError *err = NULL;
 
 		if (!g_file_copy(srcf, destf,
+				G_FILE_COPY_ALL_METADATA |
 				G_FILE_COPY_OVERWRITE | G_FILE_COPY_NOFOLLOW_SYMLINKS,
 				NULL,
 				fprogcb, NULL,
@@ -1674,10 +1675,7 @@ static void do_copy2(const char *path, const char *dest)
 			g_error_free(err);
 		}
 		else
-		{
-			lchown(dest_path, info.st_uid, info.st_gid);
 			send_check_path(dest_path);
-		}
 
 		g_object_unref(srcf);
 		g_object_unref(destf);
