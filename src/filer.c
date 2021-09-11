@@ -3889,6 +3889,34 @@ static inline gboolean is_hidden(const char *dir, DirItem *item)
 	if(item->leafname[0]=='.')
 		return TRUE;
 
+	/* Additional method, using GIO, to support '.hidden' file,
+	 * which contains a list of items to hide in a given directory
+	*/
+	if (o_enable_dot_hidden_file.int_value) {
+		gchar		*path;
+		GFile		*file = NULL;
+		GFileInfo	*info = NULL;
+		GError		*error = NULL;
+		gboolean	file_hidden = FALSE;
+
+		path = g_build_filename(dir, item->leafname, NULL);
+		file = g_file_new_for_path(path);
+		info = g_file_query_info (file,
+				G_FILE_ATTRIBUTE_STANDARD_IS_HIDDEN,
+				G_FILE_QUERY_INFO_NONE,
+				NULL, &error);
+
+		if ((!error) && (g_file_info_get_is_hidden(info))) {
+			file_hidden = TRUE;
+		}
+
+		if (info) g_object_unref(info);
+		g_object_unref(file);
+		g_free(path);
+
+		return file_hidden;
+	}
+
 	/*** Test disabled for now.  The flags aren't set on the first pass...
 	 */
 #if 0
