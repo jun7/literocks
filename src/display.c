@@ -67,6 +67,7 @@ Option o_large_width;
 Option o_small_width;
 Option o_max_length;
 Option o_display_show_hidden;
+Option o_enable_dot_hidden_file;
 Option o_display_show_thumbs;
 Option o_display_show_dir_thumbs;
 Option o_display_show_headers;
@@ -112,6 +113,7 @@ void display_init()
 		       "display_inherit_options", FALSE);
 	option_add_int(&o_display_sort_by, "display_sort_by", SORT_NAME);
 	option_add_int(&o_display_show_hidden, "display_show_hidden", TRUE);
+	option_add_int(&o_enable_dot_hidden_file, "enable_dot_hidden_file", FALSE);
 	option_add_int(&o_xattr_show, "xattr_show", TRUE);
 	option_add_int(&o_huge_size, "huge_size", HUGE_SIZE);
 
