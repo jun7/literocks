@@ -198,6 +198,10 @@ static int rox_x_error(Display *display, XErrorEvent *error)
 			error->request_code,
 			error->minor_code);
 
+	/* Continue on any error (see: https://github.com/jun7/rox-filer/issues/196) */
+	g_warning(_("Trying to continue..."));
+	return 0;
+
 	/* Try to cope with BadWindow errors */
 	if (error->error_code == BadWindow || error->error_code == BadDrawable)
 	{
