@@ -323,7 +323,7 @@ static gboolean transparent_expose(GtkWidget *widget,
 
 		cairo_select_font_face(cr, "sans-serif", 0, 0);
 		cairo_move_to(cr, 2, small_height * 2);
-		cairo_show_text(cr, _("- Double click here to close the windows"));
+		cairo_show_text(cr, _("- Double click here to close these windows"));
 	}
 	else
 	{
