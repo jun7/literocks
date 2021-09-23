@@ -542,7 +542,7 @@ static void toolbar_sort_clicked(GtkWidget *widget,
 				    FilerWindow *filer_window)
 {
 	gint eb = get_release();
-	int i, current, next, next_wrapped;
+	int i, current, next;
 	gboolean adjust;
 	GtkSortType dir;
 	gchar *tip;
@@ -551,6 +551,9 @@ static void toolbar_sort_clicked(GtkWidget *widget,
 		SORT_NAME, SORT_TYPE, SORT_DATEC, SORT_SIZE,
 		SORT_PERM, SORT_OWNER, SORT_GROUP,
 	};
+
+	static const int nsorts = G_N_ELEMENTS(sorts);
+
 	static const char *sort_names[] = {
 		N_("Sort by name"), N_("Sort by type"), N_("Sort by date"), N_("Sort by size"),
 		N_("Sort by permissions"), N_("Sort by owner"), N_("Sort by group"),
@@ -560,7 +563,7 @@ static void toolbar_sort_clicked(GtkWidget *widget,
 
 	current = -1;
 	dir = filer_window->sort_order;
-	for (i=0; i < G_N_ELEMENTS(sort_names); i++)
+	for (i=0; i < nsorts; i++)
 	{
 		if (filer_window->sort_type == sorts[i])
 		{
@@ -569,21 +572,29 @@ static void toolbar_sort_clicked(GtkWidget *widget,
 		}
 	}
 
-	if (current == -1)
+	if (current == -1 || eb == 2) {
 		next = 0;
-	else if (adjust)
+		dir = GTK_SORT_ASCENDING;
+	}
+	else if (adjust) {
 		next = current - 1;
-	else
+		if (next < 0) {
+			next = nsorts - 1;
+			dir = (dir == GTK_SORT_ASCENDING)
+				? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
+		}
+	}
+	else {
 		next = current + 1;
+		if (next >= nsorts) {
+			next = 0;
+			dir = (dir == GTK_SORT_ASCENDING)
+				? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
+		}
+	}
 
-	next_wrapped = next % G_N_ELEMENTS(sorts);
-
-	if (next_wrapped != next)
-		dir = (dir == GTK_SORT_ASCENDING)
-			? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
-
-	display_set_sort_type(filer_window, sorts[next_wrapped], dir);
- 	tip = g_strconcat(_(sort_names[next_wrapped]), ", ",
+	display_set_sort_type(filer_window, sorts[next], dir);
+ 	tip = g_strconcat(_(sort_names[next]), ", ",
 			dir == GTK_SORT_ASCENDING
 				? _("ascending") : _("descending"),
 			NULL);
