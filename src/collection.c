@@ -848,7 +848,7 @@ static gboolean scroll_idle(gpointer data) {
 			if (box)
 			{
 				remove_lasso_box(collection);
-				collection->drag_box_y[0] -= diff;
+				collection->drag_box_y[1] += diff;
 			}
 			gtk_adjustment_set_value(collection->vadj, new_value);
 			if (box)
