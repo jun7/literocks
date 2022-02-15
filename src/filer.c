@@ -3893,6 +3893,24 @@ static inline gboolean is_hidden(const char *dir, DirItem *item)
 	 * which contains a list of items to hide in a given directory
 	*/
 	if (o_enable_dot_hidden_file.int_value) {
+		static gchar *prev_dir = NULL;
+		static gboolean dot_hidden_file_exists = FALSE;
+		gchar *dot_hidden_path;
+
+		/* If current dir != previous dir, check if the .hidden file exists
+		 * and bail out early if not, to save resources.
+		 * If current dir == previous dir, no need to check, reuse the previous
+		 * value of the static dot_hidden_file_exists variable.
+		 */
+		if (g_strcmp0(prev_dir, dir) != 0) {
+			if(prev_dir) g_free(prev_dir);
+			prev_dir = g_strdup(dir);
+			dot_hidden_path = g_build_filename(dir, ".hidden", NULL);
+			dot_hidden_file_exists = g_file_test(dot_hidden_path, G_FILE_TEST_IS_REGULAR);
+			g_free(dot_hidden_path);
+		}
+		if (!dot_hidden_file_exists) return FALSE;
+
 		gchar		*path;
 		GFile		*file = NULL;
 		GFileInfo	*info = NULL;
