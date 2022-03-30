@@ -15,7 +15,7 @@ url="https://github.com/jun7/literocks"
 depends=('gtk2')
 optdepends=('ffmpegthumbnailer: for thumnails of video/*')
 makedepends=('libxslt' 'git')
-source=("git://github.com/jun7/literocks.git#branch=$branch")
+source=("git+https://github.com/jun7/literocks.git#branch=$branch")
 md5sums=('SKIP')
 
 pkgver(){
