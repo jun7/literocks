@@ -626,8 +626,11 @@ static void update_directory_menu()
 	for (; widgets; widgets = g_list_delete_link(widgets, widgets))
 		gtk_widget_destroy((GtkWidget *) widgets->data);
 
-	widgets = add_sendto_shared(filer_menu,
-			inode_directory->media_type, NULL, (CallbackFn) directory_cb);
+	widgets =g_list_concat(
+			add_sendto_shared(filer_menu,
+				inode_directory->media_type, NULL, (CallbackFn) directory_cb),
+			add_sendto_shared(filer_menu,
+				"DirMenu", NULL, (CallbackFn) directory_cb));
 }
 
 gboolean ensure_filer_menu(void)
@@ -1835,10 +1838,7 @@ static void new_file_type(gchar *templ)
 static void customise_directory_menu(gpointer data)
 {
 	char *path;
-	char *leaf = g_strconcat(".", inode_directory->media_type, NULL);
-
-	path = choices_find_xdg_path_save(leaf, "SendTo", TRUE);
-	g_free(leaf);
+	path = choices_find_xdg_path_save(".DirMenu", "SendTo", TRUE);
 
 	mkdir(path, 0755);
 	filer_opendir(path, NULL, NULL, FALSE);
