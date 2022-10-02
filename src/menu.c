@@ -502,7 +502,7 @@ static GList *menu_from_dir(GtkWidget *menu, const gchar *dir_name,
 	char *dname = NULL;
 	GPtrArray *names;
 
-	dname = pathdup(dir_name);
+	dname = g_strdup(dir_name);
 
 	names = list_dir(dname);
 	if (!names)
