@@ -1110,6 +1110,12 @@ PangoLayout *make_layout(FilerWindow *fw, DirItem *item)
 		pango_attr_list_insert(list, attr);
 	}
 
+#if PANGO_VERSION_MAJOR > 1 || PANGO_VERSION_MINOR >= 44
+	if (!list)
+		list = pango_attr_list_new();
+	pango_attr_list_insert(list, pango_attr_insert_hyphens_new(FALSE));
+#endif
+
 	if (list)
 	{
 		pango_layout_set_attributes(ret, list);
