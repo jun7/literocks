@@ -1073,6 +1073,7 @@ static void filer_lost_primary(GtkWidget *window,
 }
 
 /* Someone wants us to send them the selection */
+static gint64 selectedtime;
 static void selection_get(GtkWidget *widget, 
 		GtkSelectionData *selection_data,
 		guint    info,
@@ -1095,8 +1096,13 @@ static void selection_get(GtkWidget *widget,
 			g_string_printf(header, " %s",
 					make_path(filer_window->sym_path, ""));
 
+			//workaround somehow this first event makes memory leak
+			gboolean first = g_get_real_time() - selectedtime < 60000 ? TRUE : FALSE;
+			selectedtime = 0;
+			int i = 0;
 			while ((item = iter.next(&iter)))
 			{
+				if (first && ++i > 9) break;
 				g_string_append(reply, header->str);
 				g_string_append(reply, item->leafname);
 			}
@@ -1151,6 +1157,7 @@ void filer_selection_changed(FilerWindow *filer_window, gint time)
 				GDK_SELECTION_PRIMARY,
 				time))
 	{
+		selectedtime = g_get_real_time();
 		window_with_primary = filer_window;
 		set_selection_state(filer_window, TRUE);
 	}
