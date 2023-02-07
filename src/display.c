@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
@@ -299,7 +300,7 @@ static void draw_noimage(GdkWindow *window, GdkRectangle *rect)
 	cairo_destroy(cr);
 }
 
-static void draw_label_bg(cairo_t *cr,
+static void draw_label_lines(cairo_t *cr,
 			GdkRectangle *rect,
 			GdkColor *colour)
 {
@@ -373,15 +374,19 @@ void draw_huge_icon(
 
 	cairo_t *cr = gdk_cairo_create(window);
 
-	draw_label_bg(cr, area,
-			selected && item->label ? colour : item->label);
-
 	 pixbuf = selected
 			? create_spotlight_pixbuf(scaled, colour)
 			: scaled;
 
+	bool huge = area->width > ICON_WIDTH || area->height > ICON_HEIGHT;
+	if (!huge) draw_label_lines(cr, area,
+				selected && item->label ? colour : item->label);
+
 	gdk_cairo_set_source_pixbuf(cr, pixbuf, image_x, image_y);
 	cairo_paint(cr);
+
+	if (huge) draw_label_lines(cr, area,
+				selected && item->label ? colour : item->label);
 
 	if (scale != 1.0 && width > 0 && height > 0)
 		g_object_unref(scaled);
