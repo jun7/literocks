@@ -47,11 +47,6 @@ void radios_pack(Radios *radios, GtkBox *box);
 void radios_set_value(Radios *radios, gint value);
 gint radios_get_value(Radios *radios);
 GList *uri_list_to_glist(const char *uri_list);
-GdkPixbuf * rox_pixbuf_new_from_file_at_scale (const char *filename,
-					       int       width, 
-					       int       height,
-					       gboolean  preserve_aspect_ratio,
-					       GError    **error);
 void make_heading(GtkWidget *label, double scale_factor);
 void allow_right_click(GtkWidget *button);
 GdkPixbuf *create_spotlight_pixbuf(GdkPixbuf *src, GdkColor *color);

@@ -529,7 +529,7 @@ static gchar *thumbnail_program(MIME_type *type)
 static void create_thumbnail(const gchar *path, MIME_type *type)
 {
 	//rox_pixbuf can make image from files being load
-	GdkPixbuf *image = rox_pixbuf_new_from_file_at_scale(path,
+	GdkPixbuf *image = gdk_pixbuf_new_from_file_at_scale(path,
 			thumb_size, thumb_size, TRUE, NULL);
 
 	if (image)
