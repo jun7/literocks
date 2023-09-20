@@ -399,7 +399,7 @@ void bookmarks_add_history(const gchar *path)
 
 	{
 		char *parent;
-		parent = g_dirname(path);
+		parent = g_path_get_dirname(path);
 		history_remove(parent);
 		g_free(parent);
 	}
