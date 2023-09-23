@@ -860,7 +860,7 @@ static void clipboardcb(
 		GtkSelectionData *data,
 		gpointer p)
 {
-	if (data->length > 0)
+	if (gtk_selection_data_get_length(data) > 0)
 		menu_set_items_shaded(filer_menu, false, 4, 1);
 	else if (GPOINTER_TO_INT(p))
 		gtk_clipboard_request_contents(
@@ -2350,7 +2350,7 @@ static void paste_from_clipboard(gpointer data, guint action, GtkWidget *unused)
 	char **uri_list = gtk_selection_data_get_uris(selection);
 	if (!uri_list)
 	{
-		char *tmp = g_strndup(selection->data, selection->length);
+		char *tmp = g_strndup(gtk_selection_data_get_data(selection), gtk_selection_data_get_length(selection));
 		uri_list = g_strsplit_set(tmp, "\r\n", -1);
 		g_free(tmp);
 	}

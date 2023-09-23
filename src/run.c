@@ -41,7 +41,7 @@
 #include "choices.h"
 
 /* Static prototypes */
-static void write_data(gpointer data, gint fd, GdkInputCondition cond);
+static gboolean write_data(GIOChannel *io, GIOCondition condition, gpointer data);
 static gboolean follow_symlink(const char *full_path,
 					FilerWindow *fw, OpenFlags flags);
 static void open_mountpoint(const guchar *full_path, DirItem *item,
@@ -192,8 +192,9 @@ void run_with_data(const char *path, const void *data, gulong length)
 			memcpy(pd->data, data, length);
 			pd->length = length;
 			pd->sent = 0;
-			pd->tag = gdk_input_add_full(fds[1], GDK_INPUT_WRITE,
-						write_data, pd, NULL);
+			GIOChannel *io = g_io_channel_unix_new(fds[1]);
+			g_io_add_watch(io, G_IO_OUT,write_data, pd);
+			g_io_channel_unref(io);
 			break;
 	}
 
@@ -522,9 +523,10 @@ void examine(const guchar *path)
  ****************************************************************/
 
 
-static void write_data(gpointer data, gint fd, GdkInputCondition cond)
+static gboolean write_data(GIOChannel *io, GIOCondition condition, gpointer data)
 {
 	PipedData *pd = (PipedData *) data;
+	gint fd = g_io_channel_unix_get_fd(io);
 
 	while (pd->sent < pd->length)
 	{
@@ -535,7 +537,7 @@ static void write_data(gpointer data, gint fd, GdkInputCondition cond)
 		if (sent < 0)
 		{
 			if (errno == EAGAIN)
-				return;
+				return TRUE;
 			delayed_error(_("Could not send data to program: %s"),
 					g_strerror(errno));
 			goto finish;
@@ -549,6 +551,8 @@ finish:
 	g_free(pd->data);
 	g_free(pd);
 	close(fd);
+
+	return FALSE;
 }
 
 /* Follow the link 'full_path' and display it in filer_window, or a

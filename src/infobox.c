@@ -83,8 +83,8 @@ static GtkWidget *make_about_desktop(const gchar *path);
 static GtkWidget *make_file_says(const guchar *path);
 static GtkWidget *make_permissions(const gchar *path, DirItem *item);
 static GtkWidget *make_unmount_options(const gchar *path);
-static void add_file_output(FileStatus *fs,
-			    gint source, GdkInputCondition condition);
+static gboolean add_file_output(
+		GIOChannel *io, GIOCondition condition, gpointer data);
 static const gchar *pretty_type(DirItem *file, const guchar *path);
 static void got_response(GObject *window, gint response, gpointer data);
 static void file_info_destroyed(GtkWidget *widget, FileStatus *fs);
@@ -132,7 +132,7 @@ void infobox_new(const gchar *pathname)
 	window = gtk_dialog_new_with_buttons(
 			g_utf8_validate(path, -1, NULL) ? path
 							: _("(bad utf-8)"),
-				NULL, GTK_DIALOG_NO_SEPARATOR,
+				NULL, 0,
 				GTK_STOCK_CLOSE, GTK_RESPONSE_CANCEL,
 				GTK_STOCK_REFRESH, GTK_RESPONSE_APPLY,
 				NULL);
@@ -779,9 +779,9 @@ static GtkWidget *make_file_says(const guchar *path)
 			fs->label = l_file_label;
 			fs->fd = file_data[0];
 			fs->text = g_strdup("");
-			fs->input = gdk_input_add_full(fs->fd, GDK_INPUT_READ,
-				(GdkInputFunction) add_file_output,
-				fs, NULL);
+			GIOChannel *io = g_io_channel_unix_new(fs->fd);
+			fs->input = g_io_add_watch(io, G_IO_IN | G_IO_HUP, add_file_output, fs);
+			g_io_channel_unref(io);
 			g_signal_connect(w_file_label, "destroy",
 				G_CALLBACK(file_info_destroyed), fs);
 			break;
@@ -791,12 +791,16 @@ static GtkWidget *make_file_says(const guchar *path)
 }
 
 /* Got some data from file(1) - stick it in the window. */
-static void add_file_output(FileStatus *fs,
-			    gint source, GdkInputCondition condition)
+static gboolean add_file_output(
+		GIOChannel *io,
+		GIOCondition condition,
+		gpointer data)
 {
 	char	buffer[20];
 	char	*str;
 	int	got;
+	gint source = g_io_channel_unix_get_fd(io);
+	FileStatus *fs = data;
 
 	got = read(source, buffer, sizeof(buffer) - 1);
 	if (got <= 0)
@@ -808,7 +812,7 @@ static void add_file_output(FileStatus *fs,
 		if (got < 0)
 			delayed_error(_("file(1) says... %s"),
 					g_strerror(err));
-		return;
+		return FALSE;
 	}
 	buffer[got] = '\0';
 
@@ -820,6 +824,8 @@ static void add_file_output(FileStatus *fs,
 	g_strstrip(str);
 	gtk_label_set_text(fs->label, str);
 	g_free(str);
+
+	return TRUE;
 }
 
 static void file_info_destroyed(GtkWidget *widget, FileStatus *fs)

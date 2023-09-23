@@ -165,7 +165,7 @@ static void soap_add(xmlNodePtr body,
 static void soap_reply(xmlDocPtr reply, gboolean rpc_mode);
 static void child_died(int signum);
 static void child_died_callback(void);
-static void wake_up_cb(gpointer data, gint source, GdkInputCondition condition);
+static gboolean wake_up_cb(GIOChannel *io, GIOCondition condition, gpointer data);
 static void xrandr_size_change(GdkScreen *screen, gpointer user_data);
 static GList *build_make_script(Option *option, xmlNode *node, guchar *label);
 
@@ -534,8 +534,9 @@ int main(int argc, char **argv)
 	pipe(wakeup_pipe);
 	close_on_exec(wakeup_pipe[0], TRUE);
 	close_on_exec(wakeup_pipe[1], TRUE);
-	gdk_input_add_full(wakeup_pipe[0], GDK_INPUT_READ, wake_up_cb,
-			NULL, NULL);
+	GIOChannel *io = g_io_channel_unix_new(wakeup_pipe[0]);
+	g_io_add_watch(io, G_IO_IN,wake_up_cb, NULL);
+	g_io_channel_unref(io);
 	to_wakeup_pipe = wakeup_pipe[1];
 
 	/* If the pipe is full then we're going to get woken up anyway... */
@@ -713,14 +714,17 @@ static void child_died_callback(void)
 /* When data is written to_wakeup_pipe, this gets called from the event
  * loop some time later. Useful for getting out of signal handlers, etc.
  */
-static void wake_up_cb(gpointer data, gint source, GdkInputCondition condition)
+static gboolean wake_up_cb(GIOChannel *io, GIOCondition condition, gpointer data)
 {
 	char buf[BUFLEN];
+	gint source = g_io_channel_unix_get_fd(io);
 
 	read(source, buf, BUFLEN);
 
 	if (child_died_flag)
 		child_died_callback();
+
+	return TRUE;
 }
 
 static void xrandr_size_change(GdkScreen *screen, gpointer user_data)

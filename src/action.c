@@ -427,13 +427,15 @@ static void process_message(GUIside *gui_side, const gchar *buffer)
 }
 
 /* Called when the child sends us a message */
-static void message_from_child(gpointer          data,
-                               gint              source,
-                               GdkInputCondition condition)
+static gboolean message_from_child(
+		GIOChannel *io,
+		GIOCondition condition,
+		gpointer data)
 {
 	char buf[5];
 	GUIside	*gui_side = (GUIside *) data;
 	ABox	*abox = gui_side->abox;
+	gint source = g_io_channel_unix_get_fd(io);
 
 	if (read_exact(source, buf, 4))
 	{
@@ -449,7 +451,7 @@ static void message_from_child(gpointer          data,
 			buffer[message_len] = '\0';
 			process_message(gui_side, buffer);
 			g_free(buffer);
-			return;
+			return TRUE;
 		}
 		g_printerr("\nChild died in the middle of a message.");
 	}
@@ -487,6 +489,8 @@ static void message_from_child(gpointer          data,
 		gtk_widget_destroy(GTK_WIDGET(gui_side->abox));
 
 	filer_resize_all(FALSE);
+
+	return FALSE;
 }
 
 static int progn = 0;
@@ -955,9 +959,10 @@ static GUIside *start_action(GtkWidget *abox, ActionChild *func, gpointer data,
 	g_signal_connect(abox, "abort_operation",
 			 G_CALLBACK(abort_operation), gui_side);
 
-	gui_side->input_tag = gdk_input_add_full(
-			gui_side->from_child, GDK_INPUT_READ, message_from_child, gui_side, NULL);
+	GIOChannel *io = g_io_channel_unix_new(gui_side->from_child);
+	gui_side->input_tag = g_io_add_watch(io, G_IO_IN | G_IO_HUP, message_from_child, gui_side);
 
+	g_io_channel_unref(io);
 	return gui_side;
 }
 
