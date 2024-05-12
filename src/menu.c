@@ -1683,11 +1683,14 @@ static gboolean new_directory_cb(GObject *savebox,
 
 	if (mkdir(path, S_IRWXU | S_IRWXG | S_IRWXO))
 	{
-		if (errno == EEXIST && filer_exists(window_with_focus) && leaf)
+		int e = errno;
+		report_error("mkdir: %s", g_strerror(errno));
+
+		if (e == EEXIST && filer_exists(window_with_focus) && leaf)
 			display_set_autoselect(window_with_focus, leaf + 1);
 
-		report_error("mkdir: %s", g_strerror(errno));
 		return FALSE;
+
 	}
 
 	dir_check_this(path);
