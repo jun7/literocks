@@ -1692,7 +1692,7 @@ static gboolean new_directory_cb(GObject *savebox,
 
 	dir_check_this(path);
 
-	if (filer_exists(window_with_focus && leaf)
+	if (filer_exists(window_with_focus) && leaf)
 			display_set_autoselect(window_with_focus, leaf + 1);
 
 	return TRUE;
