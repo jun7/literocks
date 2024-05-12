@@ -233,7 +233,7 @@ void filer_init(void)
 	option_add_int(&o_unique_filer_windows, "filer_unique_windows", 1);
 	option_add_int(&o_short_flag_names, "filer_short_flag_names", TRUE);
 	option_add_int(&o_filer_view_type, "filer_view_type", VIEW_TYPE_COLLECTION);
-	option_add_int(&o_window_link, "window_link", 1);
+	option_add_int(&o_window_link, "window_link", 0);
 	option_add_int(&o_scroll_speed, "scroll_speed", 6);
 	option_add_int(&o_hide_root_msg, "hide_root_msg", FALSE);
 
