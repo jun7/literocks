@@ -129,6 +129,8 @@ static gboolean link_cb(GObject *savebox,
 			const gchar *initial, const gchar *path);
 static gboolean rename_cb(GObject *savebox,
 			const gchar *initial, const gchar *path);
+static gboolean new_directory_cb(GObject *savebox,
+				 const gchar *initial, const gchar *path);
 static void select_nth_item(GtkMenuShell *shell, int n);
 static void new_file_type(gchar *templ);
 static void do_send_to(gchar *templ);
@@ -1394,7 +1396,7 @@ static void savebox_show(const gchar *action, const gchar *path,
 				check_sympath, FALSE, TRUE, 0);
 		gtk_widget_show(check_sympath);
 	}
-	else if (callback == rename_cb)
+	else if (callback == rename_cb || callback == new_directory_cb)
 	{
 		gtk_window_set_default_size(GTK_WINDOW(savebox), 400, -1);
 	}
@@ -1676,21 +1678,22 @@ static gchar *add_seqnum(const gchar *base) {
 static gboolean new_directory_cb(GObject *savebox,
 				 const gchar *initial, const gchar *path)
 {
+	guchar	*leaf;
+	leaf = strrchr(path, '/');
+
 	if (mkdir(path, S_IRWXU | S_IRWXG | S_IRWXO))
 	{
+		if (errno == EEXIST && filer_exists(window_with_focus) && leaf)
+			display_set_autoselect(window_with_focus, leaf + 1);
+
 		report_error("mkdir: %s", g_strerror(errno));
 		return FALSE;
 	}
 
 	dir_check_this(path);
 
-	if (filer_exists(window_with_focus))
-	{
-		guchar	*leaf;
-		leaf = strrchr(path, '/');
-		if (leaf)
+	if (filer_exists(window_with_focus && leaf)
 			display_set_autoselect(window_with_focus, leaf + 1);
-	}
 
 	return TRUE;
 }
