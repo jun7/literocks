@@ -21,7 +21,7 @@ extern GtkAccelGroup	*filer_keys;
 void menu_init(void);
 MenuIconStyle get_menu_icon_style(void);
 
-typedef void (*MenuCB)();
+typedef void (*MenuCB)(void *, guint,  GtkWidget *);
 typedef void (*MenuCB1)(
 		gpointer callback_data, guint callback_action, GtkWidget *widget);
 

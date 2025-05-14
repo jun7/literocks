@@ -602,7 +602,7 @@ static void ordered_update(ChildThumbnail *info)
 }
 
 
-static void do_nothing() {}
+static void do_nothing(void *v, void *v2) {}
 static gboolean retry_thumb(char *path)
 {
 	pixmap_background_thumb(path, do_nothing, NULL);

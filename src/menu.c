@@ -166,10 +166,10 @@ static void clear_selection(gpointer data, guint action, GtkWidget *widget);
 static void invert_selection(gpointer data, guint action, GtkWidget *widget);
 static void new_directory(gpointer data, guint action, GtkWidget *widget);
 static void new_file(gpointer data, guint action, GtkWidget *widget);
-static void customise_new(gpointer data);
+static void customise_new(gpointer data, guint g, GtkWidget *w);
 static GList *add_sendto_shared(GtkWidget *menu,
 		const gchar *type, const gchar *subtype, CallbackFn swapped_func);
-static void customise_directory_menu(gpointer data);
+static void customise_directory_menu(gpointer data, guint g, GtkWidget *w);
 static void xterm_here(gpointer data, guint action, GtkWidget *widget);
 
 static void open_parent_same(gpointer data, guint action, GtkWidget *widget);
@@ -1841,7 +1841,7 @@ static void new_file_type(gchar *templ)
 	g_free(base);
 }
 
-static void customise_directory_menu(gpointer data)
+static void customise_directory_menu(gpointer data, guint g, GtkWidget *w)
 {
 	char *path;
 	path = choices_find_xdg_path_save(".DirMenu", "SendTo", TRUE);
@@ -1859,7 +1859,7 @@ void show_menu_new(FilerWindow *filer_window)
 {
 	window_with_focus = filer_window;
 	ensure_filer_menu();
-	update_new_files_menu(get_menu_icon_style());
+	update_new_files_menu();
 	show_popup_menu(filer_new_menu, NULL, 1);
 }
 
@@ -1910,7 +1910,7 @@ static void customise_send_to(gpointer data)
 		filer_opendir(save, NULL, NULL, FALSE);
 }
 
-static void customise_new(gpointer data)
+static void customise_new(gpointer data, guint g, GtkWidget *w)
 {
 	GPtrArray	*path;
 	guchar		*save;
