@@ -122,8 +122,8 @@ static MaskedPixmap *image_from_file(const char *path);
 static MaskedPixmap *get_bad_image(void);
 static GdkPixbuf *get_thumbnail_for(const char *path, gboolean *forcheck);
 static void ordered_update(ChildThumbnail *info);
-static void thumbnail_done(ChildThumbnail *info);
-static void create_thumbnail(const gchar *path, MIME_type *type);
+static gboolean thumbnail_done(ChildThumbnail *info);
+static gpointer create_thumbnail_t(gpointer data);
 static GList *thumbs_purge_cache(Option *option, xmlNode *node, guchar *label);
 static gchar *thumb_path_mk(const gchar *path);
 static gchar *thumbnail_program(MIME_type *type);
@@ -395,31 +395,32 @@ void pixmap_background_thumb(const char *path, GFunc callback, gpointer data)
 	info->timeout = 0;
 	info->order = ordered_num++;
 
-	child = fork();
-	if (child == -1)
-	{
-		g_free(thumb_prog);
-		delayed_error("fork(): %s", g_strerror(errno));
-		callback(data, NULL);
-		return;
-	}
 
-	if (child == 0)
+	if (thumb_prog || (!strcmp(type->media_type, "video") && *o_video_thumbnailer.value))
 	{
-		/* We are the child process.  (We are sloppy with freeing
-		   memory, but since we go away very quickly, that's ok.) */
-		if (thumb_prog)
+		child = fork();
+		if (child == -1)
 		{
-			execl(thumb_prog, thumb_prog, rpath,
-					thumb_path_mk(rpath),
-					g_strdup_printf("%d", thumb_size),
-					NULL);
-
-			_exit(1);
+			g_free(thumb_prog);
+			delayed_error("fork(): %s", g_strerror(errno));
+			callback(data, NULL);
+			return;
 		}
 
-		if (!strcmp(type->media_type, "video") && *o_video_thumbnailer.value)
+		if (child == 0)
 		{
+			/* We are the child process.  (We are sloppy with freeing
+			   memory, but since we go away very quickly, that's ok.) */
+			if (thumb_prog)
+			{
+				execl(thumb_prog, thumb_prog, rpath,
+						thumb_path_mk(rpath),
+						g_strdup_printf("%d", thumb_size),
+						NULL);
+
+				_exit(1);
+			}
+
 			execlp("sh", "sh", "-c", o_video_thumbnailer.value, "sh",
 					rpath,
 					thumb_path_mk(rpath),
@@ -428,16 +429,18 @@ void pixmap_background_thumb(const char *path, GFunc callback, gpointer data)
 
 			_exit(1);
 		}
-		else
-			create_thumbnail(rpath, type);
-		_exit(0);
-	}
 
-	g_free(thumb_prog);
-	info->child = child;
-	info->timeout = g_timeout_add_seconds(14,
-			(GSourceFunc) thumb_prog_timeout, info);
-	on_child_death(child, (CallbackFn) thumbnail_done, info);
+		g_free(thumb_prog);
+		info->child = child;
+		info->timeout = g_timeout_add_seconds(14,
+				(GSourceFunc) thumb_prog_timeout, info);
+		on_child_death(child, (CallbackFn) thumbnail_done, info);
+
+	}
+	else
+	{
+		g_thread_unref(g_thread_new("thumb_t", create_thumbnail_t, info));
+	}
 }
 
 /*
@@ -464,8 +467,8 @@ static void save_thumbnail(const char *pathname, GdkPixbuf *full)
 
 	mode_t old_mask = umask(0077);
 	//At least we don't need extensions being '.jpg'
-	gdk_pixbuf_save(thumb, thumbpath, "jpeg", NULL,
-			"quality", "77",
+	gdk_pixbuf_save(thumb, thumbpath, "webp", NULL,
+			"quality", "77", "method", "0",
 			NULL);
 	umask(old_mask);
 
@@ -485,7 +488,7 @@ static gchar *_thumb_path(const char *path, bool mkdirif)
 	g_free(uri);
 
 	const char *dir = thumbdir();
-	ans = g_strdup_printf("%s/%s.jpg", dir, md5);
+	ans = g_strdup_printf("%s/%s.webp", dir, md5);
 	g_free(md5);
 
 	if (mkdirif && !g_file_test(dir, G_FILE_TEST_EXISTS))
@@ -526,17 +529,23 @@ static gchar *thumbnail_program(MIME_type *type)
 /* Load path and create the thumbnail
  * file. Parent will notice when we die.
  */
-static void create_thumbnail(const gchar *path, MIME_type *type)
+static gpointer create_thumbnail_t(gpointer data)
 {
+	ChildThumbnail *info = data;
+
 	//rox_pixbuf can make image from files being load
-	GdkPixbuf *image = gdk_pixbuf_new_from_file_at_scale(path,
+	GdkPixbuf *image = gdk_pixbuf_new_from_file_at_scale(info->rpath,
 			thumb_size, thumb_size, TRUE, NULL);
 
 	if (image)
 	{
-		save_thumbnail(path, image);
+		save_thumbnail(info->rpath, image);
 		g_object_unref(image);
 	}
+
+	g_main_context_invoke(NULL, (GSourceFunc)thumbnail_done, info);
+
+	return NULL;
 }
 
 char *pixmap_make_thumb_path(const char *path)
@@ -613,7 +622,7 @@ static gboolean retry_thumb(char *path)
 #define SPECCMP(left, cmp, right) (\
 	left.tv_sec == right.tv_sec ? \
 		left.tv_nsec cmp right.tv_nsec : left.tv_sec cmp right.tv_sec)
-static void thumbnail_done(ChildThumbnail *info)
+static gboolean thumbnail_done(ChildThumbnail *info)
 {
 	if (info->timeout)
 		g_source_remove(info->timeout);
@@ -638,6 +647,8 @@ static void thumbnail_done(ChildThumbnail *info)
 	ordered_update(info);
 
 	g_free(tpath);
+
+	return FALSE;
 }
 
 
